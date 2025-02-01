@@ -31,20 +31,6 @@ class FormBuilder {
     });
   }
 
-  private renderFormsList(): void {
-
-    this.appElement.innerHTML = `
-            <div class="container">
-                <h1>Form Builder</h1>
-                <button data-action="create-form">Create New Form</button>
-                
-                <div class="forms-list">
-                    
-                </div>
-            </div>
-        `;
-  }
-
   private createNewForm(): void {
     const name = prompt("Enter form name:");
     if (!name) return;
@@ -220,6 +206,38 @@ class FormBuilder {
       default:
         return "";
     }
+  }
+
+  private renderFormsList(): void {
+    const forms = this.storageObject.getForms();
+
+    this.appElement.innerHTML = `
+            <div class="container">
+                <h1>Form Builder</h1>
+                <button data-action="create-form">Create New Form</button>
+                
+                <div class="forms-list">
+                    ${forms
+                      .map(
+                        (form) => `
+                        <div class="form-card">
+                            <h3>${form.name}</h3>
+                            <div class="form-actions">
+                                <button data-action="edit-form" data-form-id="${form.id}">Preview Form</button>
+                                <button data-action="view-responses" data-form-id="${form.id}">
+                                    View Responses
+                                </button>
+                                <button class="danger" data-action="delete-responses" data-form-id="${form.id}">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    `
+                      )
+                      .join("")}
+                </div>
+            </div>
+        `;
   }
 }
 
