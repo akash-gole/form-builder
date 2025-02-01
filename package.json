@@ -1,0 +1,26 @@
+{
+  "name": "form-builder",
+  "version": "1.0.0",
+  "description": "custom form builder",
+  "main": "index.html",
+  "scripts": {
+    "start": "lite-server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akash-gole/form-builder.git"
+  },
+  "author": "Akash Gole",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akash-gole/form-builder/issues"
+  },
+  "type": "module",  
+  "homepage": "https://github.com/akash-gole/form-builder#readme",
+  "devDependencies": {
+    "lite-server": "^2.6.1",
+    "typescript": "^5.0.0",
+    "undici-types": "^7.3.0"
+  }
+}

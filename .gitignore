@@ -1,0 +1,8 @@
+# Compiled output
+/dist
+
+# Visual Studio Code
+.vscode/*
+
+# Node
+/node_modules
