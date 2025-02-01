@@ -21,6 +21,10 @@ class FormBuilder {
   private setupEventListeners(): void {
     this.appElement.addEventListener("click", (e: Event) => {
       const target = e.target as HTMLElement;
+
+      if (target.matches('[data-action="create-form"]')) {
+        this.createNewForm();
+      }
     });
   }
 
@@ -37,7 +41,23 @@ class FormBuilder {
             </div>
         `;
   }
+
+  private createNewForm(): void {
+    const name = prompt("Enter form name:");
+    if (!name) return;
+
+    this.currentForm = {
+      id: crypto.randomUUID(),
+      name,
+      fields: [],
+      createdAt: Date.now()
+    };
+
+    this.storageObject.saveForm(this.currentForm);
+  }
 }
+
+
 
 
 
