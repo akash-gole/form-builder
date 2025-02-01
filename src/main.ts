@@ -34,6 +34,43 @@ class FormBuilder {
         this.togglePreviewMode();
       }
     });
+
+    
+    // Handle field updates
+    this.appElement.addEventListener("change", (e: Event) => {
+        const target = e.target as HTMLElement;
+        const field = target.closest(".field");
+        const optionItem = target.closest(".option-item");
+        if (!field) return;
+  
+        const fieldId = field.getAttribute("data-field-id");
+        if (!fieldId) return;
+        console.log("field", field);
+        console.log("optionItem", optionItem);
+  
+        console.log("target", target);
+  
+        if (target.matches('[data-field="label"]')) {
+          this.updateFieldLabel(fieldId, (target as HTMLInputElement).value);
+        } else if (target.matches('[data-field="type"]')) {
+          this.updateFieldType(
+            fieldId,
+            (target as HTMLSelectElement).value as FormField["type"]
+          );
+        } else if (target.matches('[data-field="required"]')) {
+          this.updateFieldRequired(fieldId, (target as HTMLInputElement).checked);
+        } else if (optionItem) {
+          const optionIndex = optionItem.getAttribute("data-field-id");
+          console.log("optionIndex", optionIndex);
+          if (target.matches('[data-field="option"]') && optionItem) {
+            this.updateFieldOption(
+              fieldId,
+              optionIndex,
+              (target as HTMLInputElement).value
+            );
+          }
+        }
+      });
   }
 
   private createNewForm(): void {
@@ -154,6 +191,7 @@ class FormBuilder {
                 }>Checkbox</option>
             </select>
             
+            ${this.renderFieldOptions(field)}
             
             <div class="field-controls">
                 <label>
@@ -228,6 +266,30 @@ class FormBuilder {
     }
   }
 
+  private renderFieldOptions(field: FormField): string {
+    if (field.type !== "radio" && field.type !== "checkbox") return "";
+
+    return `
+        <div class="options-list">
+            ${(field.options || [])
+              .map(
+                (option, index) => `
+                <div class="option-item" data-field-id="${index}">
+                    <input
+                        type="text"
+                        value="${option}"
+                        data-field="option"
+                        data-index="${index}"
+                    />
+                </div>
+            `
+              )
+              .join("")}
+            
+        </div>
+    `;
+  }
+
   private renderFormsList(): void {
     const forms = this.storageObject.getForms();
 
@@ -259,6 +321,65 @@ class FormBuilder {
             </div>
         `;
   }
+
+  private updateFieldLabel(fieldId: string, label: string): void {
+    if (!this.currentForm) return;
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    if (field) {
+      field.label = label;
+      this.storageObject.saveForm(this.currentForm);
+    }
+  }
+
+  private updateFieldOption(
+    fieldId: string,
+    optionIndex: string | null,
+    label: string
+  ): void {
+    if (!this.currentForm) return;
+
+    console.log(":fieldId", fieldId);
+    console.log(":optionIndex", optionIndex);
+    console.log(":label", label);
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    if (field && field.options) {
+      if (optionIndex) {
+        field.options[+optionIndex] = label;
+      } else {
+        console.error("Invalid optionIndex:", optionIndex);
+      }
+      this.storageObject.saveForm(this.currentForm);
+    }
+  }
+
+  private updateFieldType(fieldId: string, type: FormField["type"]): void {
+    if (!this.currentForm) return;
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    if (field) {
+      field.type = type;
+      if (type === "radio" || type === "checkbox") {
+        field.options = field.options || ["Option 1"];
+      } else {
+        delete field.options;
+      }
+      this.storageObject.saveForm(this.currentForm);
+      this.renderFormBuilder();
+    }
+  }
+
+  private updateFieldRequired(fieldId: string, required: boolean): void {
+    if (!this.currentForm) return;
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    if (field) {
+      field.required = required;
+      this.storageObject.saveForm(this.currentForm);
+    }
+  }
+
 }
 
 // Initialize the application
