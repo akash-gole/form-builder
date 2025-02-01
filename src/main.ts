@@ -27,6 +27,11 @@ class FormBuilder {
         this.createNewForm();
       } else if (target.matches('[data-action="add-field"]')) {
         this.addField();
+      } else if (target.matches('[data-action="delete-field"]')) {
+        const fieldId = target.closest(".field")?.getAttribute("data-field-id");
+        if (fieldId) this.deleteField(fieldId);
+      } else if (target.matches('[data-action="preview-form"]')) {
+        this.togglePreviewMode();
       }
     });
   }
@@ -46,6 +51,16 @@ class FormBuilder {
     this.renderFormBuilder();
   }
 
+  private deleteField(fieldId: string): void {
+    if (!this.currentForm) return;
+
+    this.currentForm.fields = this.currentForm.fields.filter(
+      (f) => f.id !== fieldId
+    );
+    this.storageObject.saveForm(this.currentForm);
+    this.renderFormBuilder();
+  }
+
   private addField(): void {
     if (!this.currentForm) return;
 
@@ -59,6 +74,11 @@ class FormBuilder {
 
     this.currentForm.fields.push(field);
     this.storageObject.saveForm(this.currentForm);
+    this.renderFormBuilder();
+  }
+
+  private togglePreviewMode(): void {
+    this.isPreviewMode = !this.isPreviewMode;
     this.renderFormBuilder();
   }
 
@@ -101,7 +121,7 @@ class FormBuilder {
 
   private renderField(field: FormField): string {
     if (this.isPreviewMode) {
-        return `
+      return `
               <div class="field" data-field-id="${field.id}">
                   <label>
                       ${field.label}
@@ -111,7 +131,7 @@ class FormBuilder {
                   ${this.renderFieldInput(field)}
               </div>
           `;
-      }
+    }
 
     return `
         <div class="field" data-field-id="${field.id}">
@@ -240,12 +260,6 @@ class FormBuilder {
         `;
   }
 }
-
-
-
-
-
-
 
 // Initialize the application
 new FormBuilder();
