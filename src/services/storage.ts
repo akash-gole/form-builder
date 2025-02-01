@@ -12,7 +12,11 @@ export class StorageService {
     const forms = this.getForms();
     const existingIndex = forms.findIndex((f) => f.id === form.id);
 
-    forms.push(form);
+    if (existingIndex >= 0) {
+        forms[existingIndex] = form;
+    } else {
+        forms.push(form);
+    }
 
     localStorage.setItem(this.FORMS_KEY, JSON.stringify(forms));
   }
