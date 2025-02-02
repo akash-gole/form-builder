@@ -123,3 +123,44 @@ select {
     color: var(--danger-color);
     margin-left: 0.25rem;
 }
+
+.preview-mode .field {
+    background: var(--gray-100);
+}
+
+.responses-list {
+    margin-top: 1rem;
+}
+
+.response-card {
+    background: white;
+    padding: 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+    #app {
+        padding: 1rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+
+    .form-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+}

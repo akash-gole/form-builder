@@ -1,5 +1,4 @@
 import { Form, FormField, FormResponse } from "./types";
-
 import { StorageService } from "./services/storage.js";
 
 class FormBuilder {
@@ -52,42 +51,41 @@ class FormBuilder {
       }
     });
 
-    
     // Handle field updates
     this.appElement.addEventListener("change", (e: Event) => {
-        const target = e.target as HTMLElement;
-        const field = target.closest(".field");
-        const optionItem = target.closest(".option-item");
-        if (!field) return;
-  
-        const fieldId = field.getAttribute("data-field-id");
-        if (!fieldId) return;
-        console.log("field", field);
-        console.log("optionItem", optionItem);
-  
-        console.log("target", target);
-  
-        if (target.matches('[data-field="label"]')) {
-          this.updateFieldLabel(fieldId, (target as HTMLInputElement).value);
-        } else if (target.matches('[data-field="type"]')) {
-          this.updateFieldType(
+      const target = e.target as HTMLElement;
+      const field = target.closest(".field");
+      const optionItem = target.closest(".option-item");
+      if (!field) return;
+
+      const fieldId = field.getAttribute("data-field-id");
+      if (!fieldId) return;
+      console.log("field", field);
+      console.log("optionItem", optionItem);
+
+      console.log("target", target);
+
+      if (target.matches('[data-field="label"]')) {
+        this.updateFieldLabel(fieldId, (target as HTMLInputElement).value);
+      } else if (target.matches('[data-field="type"]')) {
+        this.updateFieldType(
+          fieldId,
+          (target as HTMLSelectElement).value as FormField["type"]
+        );
+      } else if (target.matches('[data-field="required"]')) {
+        this.updateFieldRequired(fieldId, (target as HTMLInputElement).checked);
+      } else if (optionItem) {
+        const optionIndex = optionItem.getAttribute("data-field-id");
+        console.log("optionIndex", optionIndex);
+        if (target.matches('[data-field="option"]') && optionItem) {
+          this.updateFieldOption(
             fieldId,
-            (target as HTMLSelectElement).value as FormField["type"]
+            optionIndex,
+            (target as HTMLInputElement).value
           );
-        } else if (target.matches('[data-field="required"]')) {
-          this.updateFieldRequired(fieldId, (target as HTMLInputElement).checked);
-        } else if (optionItem) {
-          const optionIndex = optionItem.getAttribute("data-field-id");
-          console.log("optionIndex", optionIndex);
-          if (target.matches('[data-field="option"]') && optionItem) {
-            this.updateFieldOption(
-              fieldId,
-              optionIndex,
-              (target as HTMLInputElement).value
-            );
-          }
         }
-      });
+      }
+    });
   }
 
   private createNewForm(): void {
@@ -176,15 +174,15 @@ class FormBuilder {
   private renderField(field: FormField): string {
     if (this.isPreviewMode) {
       return `
-              <div class="field" data-field-id="${field.id}">
-                  <label>
-                      ${field.label}
-                      ${field.required ? '<span class="required">*</span>' : ""}
-                  </label>
-                  
-                  ${this.renderFieldInput(field)}
-              </div>
-          `;
+            <div class="field" data-field-id="${field.id}">
+                <label>
+                    ${field.label}
+                    ${field.required ? '<span class="required">*</span>' : ""}
+                </label>
+                
+                ${this.renderFieldInput(field)}
+            </div>
+        `;
     }
 
     return `
@@ -231,6 +229,7 @@ class FormBuilder {
   }
 
   private renderFieldInput(field: FormField): string {
+    console.log("this.value");
     switch (field.type) {
       case "text":
         return `
@@ -351,6 +350,7 @@ class FormBuilder {
             </div>
         `;
   }
+
   private deleteResponses(formId: string): void {
     console.log("formId", formId);
 
@@ -366,16 +366,6 @@ class FormBuilder {
     console.log("this.currentForm", this.currentForm);
     this.isPreviewMode = !this.isPreviewMode;
     this.renderFormBuilder();
-  }
-
-  private updateFieldLabel(fieldId: string, label: string): void {
-    if (!this.currentForm) return;
-
-    const field = this.currentForm.fields.find((f) => f.id === fieldId);
-    if (field) {
-      field.label = label;
-      this.storageObject.saveForm(this.currentForm);
-    }
   }
 
   private viewResponses(formId: string): void {
@@ -397,6 +387,7 @@ class FormBuilder {
     this.appElement.innerHTML = `
         <div class="container">
             <h2>Responses for ${form.name}</h2>
+            <button id="export-json">Download JSON</button>
             <div class="responses-list">
                 ${responses
                   .map(
@@ -436,17 +427,46 @@ class FormBuilder {
             <button onclick="window.location.reload()">Back to Forms</button>
         </div>
     `;
-    document.querySelectorAll(".edit-response").forEach((button) => {
-        button.addEventListener("click", (event) => {
-          const target = event.target as HTMLElement;
-          const responseId = target.getAttribute("data-response-id");
-          const index = target.dataset.index;
-          if (responseId && index) {
-            this.editResponse(form, responseId, +index);
-          }
-        });
-      });
 
+    // Attach event listener for the export button
+    document.getElementById("export-json")?.addEventListener("click", () => {
+      this.exportResponsesAsJSON(form, responses);
+    });
+
+    document.querySelectorAll(".edit-response").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        const target = event.target as HTMLElement;
+        const responseId = target.getAttribute("data-response-id");
+        const index = target.dataset.index;
+        if (responseId && index) {
+          this.editResponse(form, responseId, +index);
+        }
+      });
+    });
+  }
+
+  // Function to export responses as a JSON file
+  private exportResponsesAsJSON(form: Form, responses: FormResponse[]): void {
+    const dataToExport = {
+      formName: form.name,
+      formFields: form.fields,
+      responses: responses.map((response) => ({
+        submittedAt: new Date(response.submittedAt).toLocaleString(),
+        responses: response.responses
+      }))
+    };
+
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${form.name.replace(/\s+/g, "_")}_responses.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   private submitForm(): void {
@@ -520,6 +540,16 @@ class FormBuilder {
     this.storageObject.saveResponse(response);
     alert("Form submitted successfully!");
     this.renderFormsList();
+  }
+
+  private updateFieldLabel(fieldId: string, label: string): void {
+    if (!this.currentForm) return;
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    if (field) {
+      field.label = label;
+      this.storageObject.saveForm(this.currentForm);
+    }
   }
 
   private updateFieldOption(
@@ -682,7 +712,6 @@ class FormBuilder {
       this.viewResponses(form.id);
     });
   }
-
 }
 
 // Initialize the application
