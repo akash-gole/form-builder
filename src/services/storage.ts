@@ -2,6 +2,7 @@ import { Form, FormResponse } from "../types";
 
 export class StorageService {
   private readonly FORMS_KEY = "form_builder_forms";
+  private readonly RESPONSES_KEY = 'form_builder_responses';
 
   getForms(): Form[] {
     const forms = localStorage.getItem(this.FORMS_KEY);
@@ -20,4 +21,15 @@ export class StorageService {
 
     localStorage.setItem(this.FORMS_KEY, JSON.stringify(forms));
   }
+
+  getResponses(): FormResponse[] {
+    const responses = localStorage.getItem(this.RESPONSES_KEY);
+    return responses ? JSON.parse(responses) : [];
+}
+
+  saveResponse(response: FormResponse): void {
+    const responses = this.getResponses();
+    responses.push(response);
+    localStorage.setItem(this.RESPONSES_KEY, JSON.stringify(responses));
+}
 }

@@ -32,6 +32,8 @@ class FormBuilder {
         if (fieldId) this.deleteField(fieldId);
       } else if (target.matches('[data-action="preview-form"]')) {
         this.togglePreviewMode();
+      } else if (target.matches('[data-action="submit-form"]')) {
+        this.submitForm();
       }
     });
 
@@ -330,6 +332,79 @@ class FormBuilder {
       field.label = label;
       this.storageObject.saveForm(this.currentForm);
     }
+  }
+
+  private submitForm(): void {
+    if (!this.currentForm) return;
+
+    const form = this.appElement.querySelector("form");
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const responses: Record<string, string | string[]> = {};
+    let isValid = true; // Flag for form validation
+    let errorMessages: string[] = []; // Collect all error messages
+
+    this.currentForm.fields.forEach((field) => {
+      const inputElement = form.querySelector(
+        `[name="${field.id}"]`
+      ) as HTMLElement;
+
+      if (field.required) {
+        // Check if field is required
+        if (field.type === "checkbox") {
+          const values = formData.getAll(field.id);
+          if (values.length === 0) {
+            isValid = false;
+            errorMessages.push(
+              `Please select at least one option for ${field.label}`
+            );
+            inputElement?.classList.add("error"); // Highlight field
+          } else {
+            responses[field.id] = values.map((value) => value.toString());
+            inputElement?.classList.remove("error");
+          }
+        } else {
+          const value = formData.get(field.id);
+          if (!value) {
+            isValid = false;
+            errorMessages.push(`Please fill out ${field.label}`);
+            inputElement?.classList.add("error"); // Highlight field
+          } else {
+            responses[field.id] = value.toString();
+            inputElement?.classList.remove("error");
+          }
+        }
+      } else {
+        // If field is not required, process normally
+        if (field.type === "checkbox") {
+          responses[field.id] = formData
+            .getAll(field.id)
+            .map((value) => value.toString());
+        } else {
+          const value = formData.get(field.id);
+          if (value !== null) {
+            responses[field.id] = value.toString();
+          }
+        }
+      }
+    });
+
+    if (!isValid) {
+      alert(`Form submission failed:\n\n${errorMessages.join("\n")}`);
+      return;
+    }
+
+    const response: FormResponse = {
+      id: crypto.randomUUID(),
+      formId: this.currentForm.id,
+      responses,
+      submittedAt: Date.now()
+    };
+
+    this.storageObject.saveResponse(response);
+    alert("Form submitted successfully!");
+    this.renderFormsList();
   }
 
   private updateFieldOption(
