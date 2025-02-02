@@ -60,10 +60,6 @@ class FormBuilder {
 
       const fieldId = field.getAttribute("data-field-id");
       if (!fieldId) return;
-      console.log("field", field);
-      console.log("optionItem", optionItem);
-
-      console.log("target", target);
 
       if (target.matches('[data-field="label"]')) {
         this.updateFieldLabel(fieldId, (target as HTMLInputElement).value);
@@ -76,7 +72,6 @@ class FormBuilder {
         this.updateFieldRequired(fieldId, (target as HTMLInputElement).checked);
       } else if (optionItem) {
         const optionIndex = optionItem.getAttribute("data-field-id");
-        console.log("optionIndex", optionIndex);
         if (target.matches('[data-field="option"]') && optionItem) {
           this.updateFieldOption(
             fieldId,
@@ -229,7 +224,6 @@ class FormBuilder {
   }
 
   private renderFieldInput(field: FormField): string {
-    console.log("this.value");
     switch (field.type) {
       case "text":
         return `
@@ -352,7 +346,6 @@ class FormBuilder {
   }
 
   private deleteResponses(formId: string): void {
-    console.log("formId", formId);
 
     this.storageObject.deleteForm(formId);
     alert("Form Deleted");
@@ -360,10 +353,8 @@ class FormBuilder {
   }
 
   editMode(formId: string): void {
-    console.log("formId", formId);
     const form = this.storageObject.getForms().find((f) => f.id === formId);
     this.currentForm = form;
-    console.log("this.currentForm", this.currentForm);
     this.isPreviewMode = !this.isPreviewMode;
     this.renderFormBuilder();
   }
@@ -373,11 +364,9 @@ class FormBuilder {
       .getResponses()
       .filter((r) => r.formId === formId);
 
-    console.log("responses", responses);
 
     const form = this.storageObject.getForms().find((f) => f.id === formId);
 
-    console.log("form", form);
 
     if (!form || !responses.length) {
       alert("No responses found");
@@ -559,10 +548,6 @@ class FormBuilder {
   ): void {
     if (!this.currentForm) return;
 
-    console.log(":fieldId", fieldId);
-    console.log(":optionIndex", optionIndex);
-    console.log(":label", label);
-
     const field = this.currentForm.fields.find((f) => f.id === fieldId);
     if (field && field.options) {
       if (optionIndex) {
@@ -594,12 +579,10 @@ class FormBuilder {
     if (!this.currentForm) return;
 
     const field = this.currentForm.fields.find((f) => f.id === fieldId);
-    console.log("addoption ", field);
     if (field) {
       const optionLength = field?.options?.length
         ? field?.options?.length + 1
         : field?.options?.length;
-      console.log("field.options ", field.options);
       field.options?.push(`Option ${optionLength}`);
       this.storageObject.saveForm(this.currentForm);
       this.renderFormBuilder();
@@ -610,7 +593,6 @@ class FormBuilder {
     if (!this.currentForm) return;
 
     const field = this.currentForm.fields.find((f) => f.id === fieldId);
-    console.log("addoption ", field, index);
     if (field && index) {
       field.options?.splice(index, 1);
       this.storageObject.saveForm(this.currentForm);
@@ -699,8 +681,6 @@ class FormBuilder {
 
         // Update response in storage
         response.responses = updatedResponses;
-        console.log("response", response);
-        console.log("index", index);
         this.storageObject.updateResponse(response, index);
 
         alert("Response updated successfully!");

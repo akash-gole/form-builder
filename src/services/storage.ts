@@ -44,9 +44,7 @@ export class StorageService {
 
     updateResponse(response: FormResponse, index: number): void {
         const responses = this.getResponses();
-        console.log(responses);
-        responses[index] = response
-        console.log(responses);
+        responses[index] = response;
         localStorage.setItem(this.RESPONSES_KEY, JSON.stringify(responses));
     }
 }
