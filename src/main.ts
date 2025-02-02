@@ -15,7 +15,6 @@ class FormBuilder {
 
     //display form list
     this.renderFormsList();
-
     this.setupEventListeners();
   }
 
@@ -37,6 +36,9 @@ class FormBuilder {
         if (formId) this.editMode(formId);
       } else if (target.matches('[data-action="submit-form"]')) {
         this.submitForm();
+      } else if (target.matches('[data-action="delete-responses"]')) {
+        const formId = target.getAttribute("data-form-id");
+        if (formId) this.deleteResponses(formId);
       } else if (target.matches('[data-action="view-responses"]')) {
         const formId = target.getAttribute("data-form-id");
         if (formId) this.viewResponses(formId);
@@ -349,6 +351,13 @@ class FormBuilder {
             </div>
         `;
   }
+  private deleteResponses(formId: string): void {
+    console.log("formId", formId);
+
+    this.storageObject.deleteForm(formId);
+    alert("Form Deleted");
+    window.location.reload();
+  }
 
   editMode(formId: string): void {
     console.log("formId", formId);
@@ -416,6 +425,9 @@ class FormBuilder {
                               })
                               .join("")}
                         </div>
+                        <button class="edit-response" data-response-id="${
+                          response.id
+                        }" data-index="${index}">Edit</button>
                     </div>
                 `
                   )
@@ -424,6 +436,16 @@ class FormBuilder {
             <button onclick="window.location.reload()">Back to Forms</button>
         </div>
     `;
+    document.querySelectorAll(".edit-response").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          const target = event.target as HTMLElement;
+          const responseId = target.getAttribute("data-response-id");
+          const index = target.dataset.index;
+          if (responseId && index) {
+            this.editResponse(form, responseId, +index);
+          }
+        });
+      });
 
   }
 
@@ -574,6 +596,91 @@ class FormBuilder {
       field.required = required;
       this.storageObject.saveForm(this.currentForm);
     }
+  }
+
+  private editResponse(form: Form, responseId: string, index: number): void {
+    const responses = this.storageObject.getResponses();
+    const response = responses.find((r) => r.id === responseId);
+
+    if (!response) return alert("Response not found!");
+
+    this.appElement.innerHTML = `
+        <div class="container">
+            <h2>Edit Response for ${form.name}</h2>
+            <form id="edit-response-form">
+                ${form.fields
+                  .map((field) => {
+                    const value = response.responses[field.id] || "";
+                    if (field.type === "checkbox") {
+                      const checkedValues = Array.isArray(value) ? value : [];
+                      return `
+                                <p><strong>${field.label}</strong></p>
+                                ${field.options
+                                  ?.map(
+                                    (option) => `
+                                    <label>
+                                        <input type="checkbox" name="${
+                                          field.id
+                                        }" value="${option}"
+                                            ${
+                                              checkedValues.includes(option)
+                                                ? "checked"
+                                                : ""
+                                            } />
+                                        ${option}
+                                    </label>
+                                `
+                                  )
+                                  .join("")}
+                            `;
+                    }
+                    return `
+                            <label>
+                                <strong>${field.label}:</strong>
+                                <input type="${field.type}" name="${field.id}" value="${value}" required />
+                            </label>
+                        `;
+                  })
+                  .join("")}
+                <button type="submit">Save Changes</button>
+                <button type="button" id="cancel-edit">Cancel</button>
+            </form>
+        </div>
+    `;
+
+    // Handle form submission
+    document
+      .getElementById("edit-response-form")
+      ?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target as HTMLFormElement);
+        const updatedResponses: Record<string, string | string[]> = {};
+
+        form.fields.forEach((field) => {
+          if (field.type === "checkbox") {
+            updatedResponses[field.id] = formData.getAll(field.id).map(String);
+          } else {
+            const value = formData.get(field.id);
+            if (value !== null) {
+              updatedResponses[field.id] = value.toString();
+            }
+          }
+        });
+
+        // Update response in storage
+        response.responses = updatedResponses;
+        console.log("response", response);
+        console.log("index", index);
+        this.storageObject.updateResponse(response, index);
+
+        alert("Response updated successfully!");
+        this.viewResponses(form.id);
+      });
+
+    // Handle cancel button
+    document.getElementById("cancel-edit")?.addEventListener("click", () => {
+      this.viewResponses(form.id);
+    });
   }
 
 }
