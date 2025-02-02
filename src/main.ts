@@ -32,8 +32,21 @@ class FormBuilder {
         if (fieldId) this.deleteField(fieldId);
       } else if (target.matches('[data-action="preview-form"]')) {
         this.togglePreviewMode();
+      } else if (target.matches('[data-action="edit-form"]')) {
+        const formId = target.getAttribute("data-form-id");
+        if (formId) this.editMode(formId);
       } else if (target.matches('[data-action="submit-form"]')) {
         this.submitForm();
+      } else if (target.matches('[data-action="view-responses"]')) {
+        const formId = target.getAttribute("data-form-id");
+        if (formId) this.viewResponses(formId);
+      } else if (target.matches('[data-action="add-option"]')) {
+        const fieldId = target.closest(".field")?.getAttribute("data-field-id");
+        if (fieldId) this.addOptionField(fieldId);
+      } else if (target.matches('[data-action="delete-option"]')) {
+        const fieldId = target.closest(".field")?.getAttribute("data-field-id");
+        const index = target.dataset.index;
+        if (fieldId && index) this.deleteOptionField(fieldId, +index);
       }
     });
 
@@ -283,11 +296,24 @@ class FormBuilder {
                         data-field="option"
                         data-index="${index}"
                     />
+                    ${
+                      index > 0
+                        ? `<button
+                            type="button"
+                            class="danger"
+                            data-action="delete-option"
+                            data-index="${index}"
+                          >Remove</button>`
+                        : ""
+                    }
                 </div>
             `
               )
               .join("")}
-            
+            <button
+                type="button"
+                data-action="add-option"
+            >Add Option</button>
         </div>
     `;
   }
@@ -324,6 +350,15 @@ class FormBuilder {
         `;
   }
 
+  editMode(formId: string): void {
+    console.log("formId", formId);
+    const form = this.storageObject.getForms().find((f) => f.id === formId);
+    this.currentForm = form;
+    console.log("this.currentForm", this.currentForm);
+    this.isPreviewMode = !this.isPreviewMode;
+    this.renderFormBuilder();
+  }
+
   private updateFieldLabel(fieldId: string, label: string): void {
     if (!this.currentForm) return;
 
@@ -332,6 +367,64 @@ class FormBuilder {
       field.label = label;
       this.storageObject.saveForm(this.currentForm);
     }
+  }
+
+  private viewResponses(formId: string): void {
+    const responses = this.storageObject
+      .getResponses()
+      .filter((r) => r.formId === formId);
+
+    console.log("responses", responses);
+
+    const form = this.storageObject.getForms().find((f) => f.id === formId);
+
+    console.log("form", form);
+
+    if (!form || !responses.length) {
+      alert("No responses found");
+      return;
+    }
+
+    this.appElement.innerHTML = `
+        <div class="container">
+            <h2>Responses for ${form.name}</h2>
+            <div class="responses-list">
+                ${responses
+                  .map(
+                    (response, index) => `
+                    <div class="response-card" data-response-id="${
+                      response.id
+                    }">
+                        <h3>Submitted at: ${new Date(
+                          response.submittedAt
+                        ).toLocaleString()}</h3>
+                        <div class="response-data">
+                            ${Object.entries(response.responses)
+                              .map(([fieldId, value]) => {
+                                const field = form.fields.find(
+                                  (f) => f.id === fieldId
+                                );
+                                return field
+                                  ? `
+                                    <p><strong>${field.label}:</strong> ${
+                                      Array.isArray(value)
+                                        ? value.join(", ")
+                                        : value
+                                    }</p>
+                                `
+                                  : "";
+                              })
+                              .join("")}
+                        </div>
+                    </div>
+                `
+                  )
+                  .join("")}
+            </div>
+            <button onclick="window.location.reload()">Back to Forms</button>
+        </div>
+    `;
+
   }
 
   private submitForm(): void {
@@ -440,6 +533,34 @@ class FormBuilder {
       } else {
         delete field.options;
       }
+      this.storageObject.saveForm(this.currentForm);
+      this.renderFormBuilder();
+    }
+  }
+
+  private addOptionField(fieldId: string): void {
+    if (!this.currentForm) return;
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    console.log("addoption ", field);
+    if (field) {
+      const optionLength = field?.options?.length
+        ? field?.options?.length + 1
+        : field?.options?.length;
+      console.log("field.options ", field.options);
+      field.options?.push(`Option ${optionLength}`);
+      this.storageObject.saveForm(this.currentForm);
+      this.renderFormBuilder();
+    }
+  }
+
+  private deleteOptionField(fieldId: string, index: number): void {
+    if (!this.currentForm) return;
+
+    const field = this.currentForm.fields.find((f) => f.id === fieldId);
+    console.log("addoption ", field, index);
+    if (field && index) {
+      field.options?.splice(index, 1);
       this.storageObject.saveForm(this.currentForm);
       this.renderFormBuilder();
     }
